@@ -170,7 +170,7 @@ void encode(FILE *input_fp, FILE *output_fp, FILE *code_fp) {
         }
     }
     if (bit_count > 0) {
-        buffer = (8 - bit_count);
+        buffer <<= (8 - bit_count);
         fputc(buffer, output_fp);
     }
 }
