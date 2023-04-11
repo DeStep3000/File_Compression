@@ -1,53 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define MAX_TREE_HT 256
 
 typedef struct MinHeapNode {
     char data;
     unsigned freq;
-    struct MinHeapNode* left, * right;
+    struct MinHeapNode *left, *right;
 } MinHeapNode;
 
 typedef struct MinHeap {
     unsigned size;
     unsigned capacity;
-    MinHeapNode** array;
+    MinHeapNode **array;
 } MinHeap;
 
 typedef struct HuffmanNode {
     char data;
     unsigned freq;
-    struct HuffmanNode* left, * right;
+    struct HuffmanNode *left, *right;
 } HuffmanNode;
 
 typedef struct HuffmanTree {
-    HuffmanNode* root;
+    HuffmanNode *root;
 } HuffmanTree;
 
-MinHeapNode* newMinHeapNode(char data, unsigned freq) {
-    MinHeapNode* node = (MinHeapNode*)malloc(sizeof(MinHeapNode));
+MinHeapNode *newMinHeapNode(char data, unsigned freq) {
+    MinHeapNode *node = (MinHeapNode *) malloc(sizeof(MinHeapNode));
     node->left = node->right = NULL;
     node->data = data;
     node->freq = freq;
     return node;
 }
 
-MinHeap* createMinHeap(unsigned capacity) {
-    MinHeap* minHeap = (MinHeap*)malloc(sizeof(MinHeap));
+MinHeap *createMinHeap(unsigned capacity) {
+    MinHeap *minHeap = (MinHeap *) malloc(sizeof(MinHeap));
     minHeap->size = 0;
     minHeap->capacity = capacity;
-    minHeap->array = (MinHeapNode**)malloc(minHeap->capacity * sizeof(MinHeapNode*));
+    minHeap->array = (MinHeapNode **) malloc(minHeap->capacity * sizeof(MinHeapNode *));
     return minHeap;
 }
 
-void swapMinHeapNode(MinHeapNode** a, MinHeapNode** b) {
-    MinHeapNode* t = *a;
+void swapMinHeapNode(MinHeapNode **a, MinHeapNode **b) {
+    MinHeapNode *t = *a;
     *a = *b;
     *b = t;
 }
 
-void minHeapify(MinHeap* minHeap, int idx) {
+void minHeapify(MinHeap *minHeap, int idx) {
     int smallest = idx;
     int left = 2 * idx + 1;
     int right = 2 * idx + 2;
@@ -61,15 +62,15 @@ void minHeapify(MinHeap* minHeap, int idx) {
     }
 }
 
-MinHeapNode* extractMin(MinHeap* minHeap) {
-    MinHeapNode* temp = minHeap->array[0];
+MinHeapNode *extractMin(MinHeap *minHeap) {
+    MinHeapNode *temp = minHeap->array[0];
     minHeap->array[0] = minHeap->array[minHeap->size - 1];
-    —minHeap->size;
+    --minHeap->size;
     minHeapify(minHeap, 0);
     return temp;
 }
 
-void insertMinHeap(MinHeap* minHeap, MinHeapNode* minHeapNode) {
+void insertMinHeap(MinHeap *minHeap, MinHeapNode *minHeapNode) {
     ++minHeap->size;
     int i = minHeap->size - 1;
     while (i && minHeapNode->freq < minHeap->array[(i - 1) / 2]->freq) {
@@ -79,33 +80,33 @@ void insertMinHeap(MinHeap* minHeap, MinHeapNode* minHeapNode) {
     minHeap->array[i] = minHeapNode;
 }
 
-MinHeap* createAndBuildMinHeap(char data[], int freq[], int size) {
-    MinHeap* minHeap = createMinHeap(size);
+MinHeap *createAndBuildMinHeap(char data[], int freq[], int size) {
+    MinHeap *minHeap = createMinHeap(size);
     for (int i = 0; i < size; ++i)
         minHeap->array[i] = newMinHeapNode(data[i], freq[i]);
     minHeap->size = size;
-    for (int i = (size - 1) / 2; i >= 0; —i)
-    minHeapify(minHeap, i);
+    for (int i = (size - 1) / 2; i >= 0; i--)
+        minHeapify(minHeap, i);
     return minHeap;
 }
 
-HuffmanNode* buildHuffmanTree(char data[], int freq[], int size) {
-    HuffmanNode* left, * right, * top;
-    MinHeap* minHeap = createAndBuildMinHeap(data, freq, size);
+HuffmanNode *buildHuffmanTree(char data[], int freq[], int size) {
+    HuffmanNode *left, *right, *top;
+    MinHeap *minHeap = createAndBuildMinHeap(data, freq, size);
     while (minHeap->size != 1) {
         left = extractMin(minHeap);
         right = extractMin(minHeap);
-        top = (HuffmanNode*)malloc(sizeof(HuffmanNode));
+        top = (HuffmanNode *) malloc(sizeof(HuffmanNode));
         top->data = '$';
         top->freq = left->freq + right->freq;
         top->left = left;
         top->right = right;
-        insertMinHeap(minHeap, (MinHeapNode*)top);
+        insertMinHeap(minHeap, (MinHeapNode *) top);
     }
-    return (HuffmanNode*)extractMin(minHeap);
+    return (HuffmanNode *) extractMin(minHeap);
 }
 
-void printCodes(HuffmanNode* root, int arr[], int top, FILE* fp) {
+void printCodes(HuffmanNode *root, int arr[], int top, FILE *fp) {
     if (root->left) {
         arr[top] = 0;
         printCodes(root->left, arr, top + 1, fp);
@@ -122,15 +123,15 @@ void printCodes(HuffmanNode* root, int arr[], int top, FILE* fp) {
     }
 }
 
-void HuffmanCodes(char data[], int freq[], int size, FILE* fp) {
-    HuffmanNode* root = buildHuffmanTree(data, freq, size);
+void HuffmanCodes(char data[], int freq[], int size, FILE *fp) {
+    HuffmanNode *root = buildHuffmanTree(data, freq, size);
     int arr[MAX_TREE_HT], top = 0;
     printCodes(root, arr, top, fp);
 }
 
-void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
+void encode(FILE *input_fp, FILE *output_fp, FILE *code_fp) {
     char data[MAX_TREE_HT];
-    int freq[MAX_TREE_HT] = { 0 };
+    int freq[MAX_TREE_HT] = {0};
     char c;
     while ((c = fgetc(input_fp)) != EOF) {
         ++freq[c];
@@ -155,7 +156,7 @@ void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
             if (symbol == c) {
                 for (int i = 0; i < len; ++i) {
                     if (code[i + 2] == '1') {
-                        buffer |= (1 « (7 - bit_count));
+                        buffer |= (1 << (7 - bit_count));
                     }
                     ++bit_count;
                     if (bit_count == 8) {
@@ -169,33 +170,40 @@ void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
         }
     }
     if (bit_count > 0) {
-        buffer «= (8 - bit_count);
+        buffer = (8 - bit_count);
         fputc(buffer, output_fp);
     }
 }
 
 
 int main() {
-    FILE* input_fp = fopen(from, "rb");
-    if (!fr)
-        return;
-    fseek(fr, 0L, SEEK_END);
-    long lengh = ftell(fr);
-    fseek(fr, 0, SEEK_SET);
-    for (int i = 0; i < length; ++i)
-    {
-    freq[(unsigned char)fgetc(fr)] ++;
-    }
-    fclose(fr);
-    FILE* output_fp = fopen("output.bin", "wb");
-    FILE* code_fp = fopen("code.txt", "w");
+    printf("Hello, my user.\nThis program allows you to compress files using the Huffman algorithm."
+           "\nFirst, create a file and write its name to the console.\n");
+    char from[50];
+    scanf("%s", from);
+    FILE *input_fp = fopen(from, "rb");
+    FILE *output_fp = fopen("output.bin", "wb");
+    FILE *code_fp = fopen("code.txt", "w");
+
     printf("input_fp = %p\n", input_fp);
     printf("output_fp = %p\n", output_fp);
     printf("code_fp = %p\n", code_fp);
-    if (input_fp == NULL || output_fp == NULL || code_fp == NULL) {
-        fprintf(stderr, "Error while opening files\n");
-        return 1;
+
+    if (!input_fp){
+            fprintf(stderr, "Error while opening files\n");
+            return 1;
+        }
+    fseek(input_fp, 0L, SEEK_END);
+    long length = ftell(input_fp);
+    char freq[length];
+    fseek(input_fp, 0, SEEK_SET);
+    for (int i = 0; i < length; ++i) {
+        freq[(unsigned char) fgetc(input_fp)]++;
     }
+//    printf("input_fp = %p\n", input_fp);
+//    printf("output_fp = %p\n", output_fp);
+//    printf("code_fp = %p\n", code_fp);
+
     encode(input_fp, output_fp, code_fp);
     fclose(input_fp);
     fclose(output_fp);
