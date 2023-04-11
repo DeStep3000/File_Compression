@@ -176,7 +176,17 @@ void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
 
 
 int main() {
-    FILE* input_fp = fopen("input.txt", "rb");
+    FILE* input_fp = fopen(from, "rb");
+    if (!fr)
+        return;
+    fseek(fr, 0L, SEEK_END);
+    long lengh = ftell(fr);
+    fseek(fr, 0, SEEK_SET);
+    for (int i = 0; i < length; ++i)
+    {
+    freq[(unsigned char)fgetc(fr)] ++;
+    }
+    fclose(fr);
     FILE* output_fp = fopen("output.bin", "wb");
     FILE* code_fp = fopen("code.txt", "w");
     printf("input_fp = %p\n", input_fp);
