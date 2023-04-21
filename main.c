@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -177,7 +178,7 @@ void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
 
 
 int main() {
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_RED | BACKGROUND_GREEN);
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE);
     printf("Hello, my user.\nThis program allows you to compress files using the Huffman algorithm."
         "\nFirst, create a file and write its name to the console.\n");
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN);
