@@ -177,8 +177,10 @@ void encode(FILE* input_fp, FILE* output_fp, FILE* code_fp) {
 
 
 int main() {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_RED | BACKGROUND_GREEN);
     printf("Hello, my user.\nThis program allows you to compress files using the Huffman algorithm."
         "\nFirst, create a file and write its name to the console.\n");
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN);
     char from[50];
     scanf("%s", from);
     FILE* input_fp = fopen(from, "rb");
@@ -190,7 +192,9 @@ int main() {
     printf("code_fp = %p\n", code_fp);
 
     if (!input_fp) {
+        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN | BACKGROUND_RED);
         fprintf(stderr, "Error while opening files\n");
+        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN);
         return 1;
     }
     fseek(input_fp, 0L, SEEK_END);
