@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <locale.h>
 
 // Структура для представления узла в дереве Хаффмана
 struct HuffmanNode {
@@ -188,7 +187,7 @@ struct HuffmanNode* readHeader(FILE* compressedFile, unsigned char* currentByte,
 void compressFile(const char* sourceFilePath, const char* compressedFilePath) {
     FILE* sourceFile = fopen(sourceFilePath, "rb");
     if (sourceFile == NULL) {
-        printf("Не удалось открыть исходный файл.\n");
+        printf("The source file could not be opened.\n");
         return;
     }
 
@@ -206,7 +205,7 @@ void compressFile(const char* sourceFilePath, const char* compressedFilePath) {
     // Открытие сжатого файла для записи
     FILE* compressedFile = fopen(compressedFilePath, "wb");
     if (compressedFile == NULL) {
-        printf("Не удалось открыть сжатый файл.\n");
+        printf("The compressed file could not be opened.\n");
         return;
     }
 
@@ -217,7 +216,7 @@ void compressFile(const char* sourceFilePath, const char* compressedFilePath) {
     // Открытие исходного файла для чтения
     sourceFile = fopen(sourceFilePath, "rb");
     if (sourceFile == NULL) {
-        printf("Не удалось открыть исходный файл.\n");
+        printf("The compressed file could not be opened.");
         return;
     }
 
@@ -256,7 +255,7 @@ void compressFile(const char* sourceFilePath, const char* compressedFilePath) {
 void decompressFile(const char* compressedFilePath, const char* decompressedFilePath) {
     FILE* compressedFile = fopen(compressedFilePath, "rb");
     if (compressedFile == NULL) {
-        printf("Не удалось открыть сжатый файл.\n");
+        printf("The compressed file could not be opened.\n");
         return;
     }
 
@@ -268,7 +267,7 @@ void decompressFile(const char* compressedFilePath, const char* decompressedFile
     // Открытие распакованного файла для записи
     FILE* decompressedFile = fopen(decompressedFilePath, "wb");
     if (decompressedFile == NULL) {
-        printf("Не удалось открыть распакованный файл.\n");
+        printf("The unpacked file could not be opened.\n");
         return;
     }
 
@@ -296,8 +295,6 @@ void decompressFile(const char* compressedFilePath, const char* decompressedFile
 }
 
 int main() {
-    setlocale(LC_ALL,".1251");
-
     const char* sourceFilePath = "input.txt";
     const char* compressedFilePath = "compressed.bin";
     const char* decompressedFilePath = "decompressed.txt";
@@ -305,8 +302,7 @@ int main() {
     compressFile(sourceFilePath, compressedFilePath);
     decompressFile(compressedFilePath, decompressedFilePath);
 
-    printf("Сжатие и распаковка завершены.\n");
+    printf("Compression and decompression are complete.\n");
 
     return 0;
 }
-// моё болото
