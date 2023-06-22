@@ -8,22 +8,26 @@ enum BOOL{FALSE, TRUE};
 char lastStr[CHARMAX] = "input.txt";
 char argv[CHARMAX][CHARMAX];
 
+// Структура для хранения данных
 typedef struct {
     unsigned char value[SIZE];
     int size;
 } data;
 
+// Структура для хранения информации о символе
 typedef struct {
     short listChar[SIZE];
     int size, freq;
 } info;
 
+// Структура узла в дереве Хаффмана
 typedef struct NODE {
     enum BOOL isEnd;
     unsigned char symb;
     struct NODE *left, *right;
 } node;
 
+// Получение значения бита из данных по заданному индексу
 int getBit(data x, int id) {
     if (x.size <= id) {
         printf("Sorry. My fault\n");
@@ -32,6 +36,7 @@ int getBit(data x, int id) {
     return ((x.value[id / 8] >> (id % 8)) & 1);
 }
 
+// Установка бита в данных
 void setBit(data * x, int bit) {
     if (bit) {
         x->value[x->size / 8] |= (1 << (x->size % 8));
@@ -41,7 +46,7 @@ void setBit(data * x, int bit) {
     x->size++;
 }
 
-
+// Генерация нового имени файла на основе старого имени и вставляемой строки
 void getNewFileName(char nameOut[CHARMAX], char nameIn[CHARMAX], const char * insStr) {
     int dot = strlen(nameIn) - 1;
     while (nameIn[dot] != '.'){
@@ -61,6 +66,7 @@ void getNewFileName(char nameOut[CHARMAX], char nameIn[CHARMAX], const char * in
 
 node * root = NULL;
 
+// Рекурсивное удаление узлов дерева
 void deleteRoot(node ** curNode) {
     if ((*curNode)->right) {
         deleteRoot(&(*curNode)->right);
@@ -71,6 +77,7 @@ void deleteRoot(node ** curNode) {
     free(*curNode);
 }
 
+// Добавление символа и его кода в дерево Хаффмана
 void add(data x, unsigned char symb) {
     node * rootPtr = root;
     for (int i = x.size - 1; i >= 0; i--) {
