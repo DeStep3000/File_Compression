@@ -1,308 +1,373 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <string.h>
 
-// Структура для представления узла в дереве Хаффмана
-struct HuffmanNode {
-    unsigned char data; // Данные символа
-    unsigned int frequency; // Частота символа
-    struct HuffmanNode* left; // Левый потомок
-    struct HuffmanNode* right; // Правый потомок
-};
+#define CHARMAX 256
+#define SIZE 300000
+enum BOOL{FALSE, TRUE};
+char lastStr[CHARMAX] = "input.txt";
+char argv[CHARMAX][CHARMAX];
 
-// Структура для представления очереди приоритетов
-struct PriorityQueue {
-    unsigned int size; // Размер очереди
-    unsigned int capacity; // Емкость очереди
-    struct HuffmanNode** nodes; // Массив узлов
-};
+typedef struct {
+    unsigned char value[SIZE];
+    int size;
+} data;
 
-// Создание нового узла дерева Хаффмана
-struct HuffmanNode* createNode(unsigned char data, unsigned int frequency) {
-    struct HuffmanNode* node = (struct HuffmanNode*)malloc(sizeof(struct HuffmanNode));
-    node->data = data;
-    node->frequency = frequency;
-    node->left = NULL;
-    node->right = NULL;
-    return node;
-}
+typedef struct {
+    short listChar[SIZE];
+    int size, freq;
+} info;
 
-// Создание очереди приоритетов
-struct PriorityQueue* createPriorityQueue(unsigned int capacity) {
-    struct PriorityQueue* queue = (struct PriorityQueue*)malloc(sizeof(struct PriorityQueue));
-    queue->size = 0;
-    queue->capacity = capacity;
-    queue->nodes = (struct HuffmanNode**)malloc(capacity * sizeof(struct HuffmanNode*));
-    return queue;
-}
+typedef struct NODE {
+    enum BOOL isEnd;
+    unsigned char symb;
+    struct NODE *left, *right;
+} node;
 
-// Проверка, является ли очередь приоритетов пустой
-bool isQueueEmpty(struct PriorityQueue* queue) {
-    return queue->size == 0;
-}
-
-// Обмен двух узлов в очереди приоритетов
-void swapNodes(struct HuffmanNode** a, struct HuffmanNode** b) {
-    struct HuffmanNode* temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-// Просеивание вниз в очереди приоритетов
-void heapify(struct PriorityQueue* queue, int index) {
-    int smallest = index;
-    int left = 2 * index + 1;
-    int right = 2 * index + 2;
-
-    if (left < queue->size && queue->nodes[left]->frequency < queue->nodes[smallest]->frequency)
-        smallest = left;
-
-    if (right < queue->size && queue->nodes[right]->frequency < queue->nodes[smallest]->frequency)
-        smallest = right;
-
-    if (smallest != index) {
-        swapNodes(&queue->nodes[index], &queue->nodes[smallest]);
-        heapify(queue, smallest);
+int getBit(data x, int id) {
+    if (x.size <= id) {
+        printf("Sorry. My fault\n");
+        return -1;
     }
+    return ((x.value[id / 8] >> (id % 8)) & 1);
 }
 
-// Добавление узла в очередь приоритетов
-void enqueue(struct PriorityQueue* queue, struct HuffmanNode* node) {
-    if (queue->size == queue->capacity)
-        return;
-
-    int i = queue->size;
-    queue->nodes[i] = node;
-    queue->size++;
-
-    while (i != 0 && queue->nodes[(i - 1) / 2]->frequency > queue->nodes[i]->frequency) {
-        swapNodes(&queue->nodes[(i - 1) / 2], &queue->nodes[i]);
-        i = (i - 1) / 2;
-    }
-}
-
-// Удаление и возврат узла с наименьшей частотой из очереди приоритетов
-struct HuffmanNode* dequeue(struct PriorityQueue* queue) {
-    if (isQueueEmpty(queue))
-        return NULL;
-
-    struct HuffmanNode* node = queue->nodes[0];
-    queue->nodes[0] = queue->nodes[queue->size - 1];
-    queue->size--;
-
-    heapify(queue, 0);
-
-    return node;
-}
-
-// Построение дерева Хаффмана на основе частот символов
-struct HuffmanNode* buildHuffmanTree(unsigned char data[], unsigned int frequency[], unsigned int size) {
-    struct HuffmanNode *left, *right, *top;
-
-    // Создание очереди приоритетов и заполнение ее узлами-листьями
-    struct PriorityQueue* queue = createPriorityQueue(size);
-    for (int i = 0; i < size; ++i)
-        enqueue(queue, createNode(data[i], frequency[i]));
-
-    // Построение дерева Хаффмана
-    while (!isQueueEmpty(queue)) {
-        left = dequeue(queue);
-        right = dequeue(queue);
-
-        top = createNode('$', left->frequency + right->frequency);
-        top->left = left;
-        top->right = right;
-
-        enqueue(queue, top);
-    }
-
-    // Извлечение корня дерева Хаффмана
-    return dequeue(queue);
-}
-
-// Запись бита в байт
-void writeBit(FILE* file, unsigned char* currentByte, unsigned char* bitPosition, bool bit) {
-    *currentByte <<= 1;
-    if (bit)
-        *currentByte |= 1;
-
-    (*bitPosition)++;
-    if (*bitPosition == 8) {
-        fwrite(currentByte, sizeof(unsigned char), 1, file);
-        *currentByte = 0;
-        *bitPosition = 0;
-    }
-}
-
-// Чтение бита из байта
-bool readBit(FILE* file, unsigned char* currentByte, unsigned char* bitPosition) {
-    if (*bitPosition == 0) {
-        fread(currentByte, sizeof(unsigned char), 1, file);
-        *bitPosition = 8;
-    }
-
-    bool bit = (*currentByte >> (*bitPosition - 1)) & 1;
-    (*bitPosition)--;
-    return bit;
-}
-
-// Запись заголовка с информацией о дереве Хаффмана в сжатый файл
-void writeHeader(FILE* compressedFile, struct HuffmanNode* root, unsigned int* dataSize) {
-    if (root == NULL)
-        return;
-
-    if (root->left == NULL && root->right == NULL) {
-        // Листовой узел
-        writeBit(compressedFile, NULL, NULL, true);
-        fwrite(&root->data, sizeof(unsigned char), 1, compressedFile);
-        (*dataSize)++;
+void setBit(data * x, int bit) {
+    if (bit) {
+        x->value[x->size / 8] |= (1 << (x->size % 8));
     } else {
-        // Внутренний узел
-        writeBit(compressedFile, NULL, NULL, false);
-        (*dataSize)++;
-        writeHeader(compressedFile, root->left, dataSize);
-        writeHeader(compressedFile, root->right, dataSize);
+        x->value[x->size / 8] &= (1 << (x->size % 8)) - 1;
     }
+    x->size++;
 }
 
-// Чтение заголовка из сжатого файла и построение дерева Хаффмана
-struct HuffmanNode* readHeader(FILE* compressedFile, unsigned char* currentByte, unsigned char* bitPosition) {
-    bool isLeaf = readBit(compressedFile, currentByte, bitPosition);
 
-    if (isLeaf) {
-        unsigned char data;
-        fread(&data, sizeof(unsigned char), 1, compressedFile);
-        return createNode(data, 0);
+void getNewFileName(char nameOut[CHARMAX], char nameIn[CHARMAX], const char * insStr) {
+    int dot = strlen(nameIn) - 1;
+    while (nameIn[dot] != '.'){
+        dot--;
+    }
+    strncat(nameOut, nameIn, dot);
+    strcat(nameOut, "[");
+    strcat(nameOut, insStr);
+    strcat(nameOut, "]");
+    if (!strcmp(insStr, "compress")) {
+        strcat(nameOut, ".ada");
     } else {
-        struct HuffmanNode* left = readHeader(compressedFile, currentByte, bitPosition);
-        struct HuffmanNode* right = readHeader(compressedFile, currentByte, bitPosition);
-        struct HuffmanNode* node = createNode('$', 0);
-        node->left = left;
-        node->right = right;
-        return node;
+        strcat(nameOut, ".txt");
     }
+    strcpy(lastStr, nameOut);
 }
 
-// Сжатие файла с использованием алгоритма Хаффмана
-void compressFile(const char* sourceFilePath, const char* compressedFilePath) {
-    FILE* sourceFile = fopen(sourceFilePath, "rb");
-    if (sourceFile == NULL) {
-        printf("The source file could not be opened.\n");
-        return;
+node * root = NULL;
+
+void deleteRoot(node ** curNode) {
+    if ((*curNode)->right) {
+        deleteRoot(&(*curNode)->right);
     }
-
-    // Подсчет частоты символов в исходном файле
-    unsigned int frequency[256] = {0};
-    unsigned char data;
-    while (fread(&data, sizeof(unsigned char), 1, sourceFile))
-        frequency[data]++;
-
-    fclose(sourceFile);
-
-    // Построение дерева Хаффмана
-    struct HuffmanNode* root = buildHuffmanTree((unsigned char[]){0}, frequency, 256);
-
-    // Открытие сжатого файла для записи
-    FILE* compressedFile = fopen(compressedFilePath, "wb");
-    if (compressedFile == NULL) {
-        printf("The compressed file could not be opened.\n");
-        return;
+    if ((*curNode)->left) {
+        deleteRoot(&(*curNode)->left);
     }
+    free(*curNode);
+}
 
-    // Запись заголовка в сжатый файл
-    unsigned int dataSize = 0;
-    writeHeader(compressedFile, root, &dataSize);
-
-    // Открытие исходного файла для чтения
-    sourceFile = fopen(sourceFilePath, "rb");
-    if (sourceFile == NULL) {
-        printf("The compressed file could not be opened.");
-        return;
-    }
-
-    // Кодирование данных и запись в сжатый файл
-    unsigned char currentByte = 0;
-    unsigned char bitPosition = 0;
-    while (fread(&data, sizeof(unsigned char), 1, sourceFile)) {
-        struct HuffmanNode* current = root;
-        while (current->left != NULL && current->right != NULL) {
-            bool bit = (data >> bitPosition) & 1;
-            if (bit)
-                current = current->right;
-            else
-                current = current->left;
-
-            bitPosition++;
-            if (bitPosition == 8) {
-                bitPosition = 0;
-                fread(&data, sizeof(unsigned char), 1, sourceFile);
+void add(data x, unsigned char symb) {
+    node * rootPtr = root;
+    for (int i = x.size - 1; i >= 0; i--) {
+        int bit = getBit(x, i);
+        root->isEnd = FALSE;
+        if (bit) {
+            if (!root->right) {
+                root->right = (node *)malloc(sizeof(node));
+                root->right->right = NULL;
+                root->right->left = NULL;
             }
+            root = root->right;
+        } else {
+            if (!root->left) {
+                root->left = (node *)malloc(sizeof(node));
+                root->left->right = NULL;
+                root->left->left = NULL;
+            }
+            root = root->left;
         }
-        writeBit(compressedFile, &currentByte, &bitPosition, (current->data >> 7) & 1);
-    }
-
-    // Запись последнего неполного байта, если есть
-    while (bitPosition != 0)
-        writeBit(compressedFile, &currentByte, &bitPosition, 0);
-
-    // Освобождение памяти, закрытие файлов
-    fclose(sourceFile);
-    fclose(compressedFile);
-    free(root);
-}
-
-// Распаковка сжатого файла
-void decompressFile(const char* compressedFilePath, const char* decompressedFilePath) {
-    FILE* compressedFile = fopen(compressedFilePath, "rb");
-    if (compressedFile == NULL) {
-        printf("The compressed file could not be opened.\n");
-        return;
-    }
-
-    // Чтение заголовка из сжатого файла и построение дерева Хаффмана
-    unsigned char currentByte = 0;
-    unsigned char bitPosition = 0;
-    struct HuffmanNode* root = readHeader(compressedFile, &currentByte, &bitPosition);
-
-    // Открытие распакованного файла для записи
-    FILE* decompressedFile = fopen(decompressedFilePath, "wb");
-    if (decompressedFile == NULL) {
-        printf("The unpacked file could not be opened.\n");
-        return;
-    }
-
-    // Раскодирование данных и запись в распакованный файл
-    struct HuffmanNode* current = root;
-    while (fread(&currentByte, sizeof(unsigned char), 1, compressedFile)) {
-        for (int i = 7; i >= 0; --i) {
-            bool bit = (currentByte >> i) & 1;
-            if (bit)
-                current = current->right;
-            else
-                current = current->left;
-
-            if (current->left == NULL && current->right == NULL) {
-                fwrite(&current->data, sizeof(unsigned char), 1, decompressedFile);
-                current = root;
-            }
+        if (!i) {
+            root->isEnd = TRUE;
+            root->symb = symb;
         }
     }
+    root = rootPtr;
+}
 
-    // Освобождение памяти, закрытие файлов
+unsigned char strOut[SIZE];
+
+node * curNodePtr;
+void go(int bit, size_t * sizeOut) {
+    if (bit) {
+        curNodePtr = curNodePtr->right;
+    } else {
+        curNodePtr = curNodePtr->left;
+    }
+    if (curNodePtr->isEnd) {
+        strOut[*sizeOut] = curNodePtr->symb;
+        (*sizeOut)++;
+        curNodePtr = root;
+    }
+}
+
+void decompress() {
+    if (!strcmp(argv[1], "\\last")) {
+        strcpy(argv[1], lastStr);
+    }
+    FILE * compressedFile = fopen(argv[1], "rb");
+    if (compressedFile == NULL) {
+        printf("Error during file opening\n");
+        return;
+    }
+
+    unsigned char * strIn = malloc(SIZE * sizeof(unsigned char));
+    data * codes = malloc(CHARMAX * sizeof(data));
+
+    root = (node *)malloc(sizeof(node));
+    root->left = NULL;
+    root->right = NULL;
+    size_t sizeIn = fread(strIn, 1, SIZE, compressedFile), sizeOut = 0;
     fclose(compressedFile);
+    printf("|=====|\n|+");
+
+    int cntDiff = strIn[0], nowId = 1;
+    for (int i = 0; i < cntDiff; i++) {
+        for (int j = 0; j < strIn[nowId + 1]; j++) {
+            setBit(&codes[strIn[nowId]], (strIn[nowId + 2 + j / 8] >> (j % 8)) & 1);
+        }
+        add(codes[strIn[nowId]], strIn[nowId]);
+        nowId += (strIn[nowId + 1] + 7) / 8 + 2;
+    }
+    printf("+");
+
+    int uslessBits = strIn[nowId];
+    curNodePtr = &(*root);
+    for (int i = sizeIn * 8 - uslessBits - 1; i >= (nowId + 1) * 8; i--) {
+        go((strIn[i / 8] >> (i % 8)) & 1, &sizeOut);
+    }
+    printf("+");
+
+    for (int i = 0; i * 2 < sizeOut; i++) {
+        unsigned char tmp = strOut[i];
+        strOut[i] = strOut[sizeOut - i - 1];
+        strOut[sizeOut - i - 1] = tmp;
+    }
+    printf("+");
+
+    char nameOut[CHARMAX] = "\0";
+    getNewFileName(nameOut, argv[1], "normal");
+    FILE * decompressedFile = fopen(nameOut, "wb");
+    fwrite(strOut, 1, sizeOut, decompressedFile);
     fclose(decompressedFile);
-    free(root);
+    deleteRoot(&root);
+    free(strIn);
+    free(codes);
+    printf("+|\n");
+
+    printf("Successful decompression!\nThe new file is called \"%s\"\n", nameOut);
+    return;
+}
+
+void compress() {
+    if (!strcmp(argv[1], "\\last")) {
+        strcpy(argv[1], lastStr);
+    }
+    FILE * inputFile = fopen(argv[1], "r");
+    int cntSymbols[CHARMAX] = {0}, strSize = 0;
+    if (inputFile == NULL) {
+        printf("Error during file opening :(\n");
+        return;
+    }
+
+    unsigned char * strFile = malloc(SIZE * sizeof(unsigned char));
+    unsigned char * buffer  = malloc(SIZE * sizeof(unsigned char));
+    data * listData = malloc(CHARMAX * sizeof(data));
+    info * queue = malloc(CHARMAX * sizeof(info));
+
+    while (TRUE) {
+        int symb = fgetc(inputFile);
+        if (symb == EOF) {
+            break;
+        }
+        strFile[strSize] = symb;
+        strSize++;
+        cntSymbols[symb]++;
+    }
+    fclose(inputFile);
+    printf("|=====");
+    for (int i = 0; i < strSize / 10000; i++) {
+        printf("=");
+    }
+    printf("|\n|");
+    printf("+");
+
+    int cntDiff = 0;
+    for (int i = 0; i < CHARMAX; i++) {
+        listData[i].size = 0;
+        if (cntSymbols[i]) {
+            queue[cntDiff].freq = cntSymbols[i];
+            queue[cntDiff].listChar[0] = i;
+            queue[cntDiff].size = 1;
+            cntDiff++;
+        }
+    }
+    printf("+");
+
+    for (int cnt = cntDiff; cnt > 1; cnt--) {
+        int posMinMin = 0, posMinMax = -1;
+        for (int i = 1; i < cnt; i++) {
+            if (queue[i].freq <= queue[posMinMin].freq) {
+                posMinMax = posMinMin;
+                posMinMin = i;
+            } else if (posMinMax == -1 || queue[i].freq <= queue[posMinMax].freq) {
+                posMinMax = i;
+            }
+        }
+        queue[posMinMin].freq += queue[posMinMax].freq;
+        for (int i = 0; i < queue[posMinMin].size; i++) {
+            setBit(&listData[queue[posMinMin].listChar[i]], 0);
+        }
+        for (int i = 0; i < queue[posMinMax].size; i++) {
+            setBit(&listData[queue[posMinMax].listChar[i]], 1);
+        }
+        while (queue[posMinMax].size--) {
+            queue[posMinMin].listChar[queue[posMinMin].size] =
+                    queue[posMinMax].listChar[queue[posMinMax].size];
+            queue[posMinMin].size++;
+        }
+        queue[posMinMax] = queue[cnt - 1];
+    }
+    if (cntDiff == 1) {
+        setBit(&listData[queue[0].listChar[0]], 0);
+    }
+    printf("+");
+
+    buffer[0] = (unsigned char)cntDiff;
+    int bufferSize = 1, bitLength = 0;
+    for (int i = 0; i < CHARMAX; i++) {
+        if (i == 7) continue;
+        bitLength += cntSymbols[i] * listData[i].size;
+        if (listData[i].size == 0) continue;
+        buffer[bufferSize++] = (unsigned char)i;
+        buffer[bufferSize++] = (unsigned char)listData[i].size;
+        for (int sz = 0; sz < listData[i].size; sz += 8) {
+            buffer[bufferSize++] = listData[i].value[sz / 8];
+        }
+    }
+    printf("+");
+
+    buffer[bufferSize] = (8 - (unsigned char)(bitLength % 8)) % 8;
+    bufferSize++;
+    int nowSz = 0;
+    for (int i = 0; i < strSize; i++) {
+        for (int sz = 0; sz < listData[strFile[i]].size; sz++) {
+            int bit = getBit(listData[strFile[i]], sz);
+            if (bit) {
+                buffer[bufferSize] |= (1 << (nowSz % 8));
+            } else {
+                buffer[bufferSize] &= (1 << (nowSz % 8)) - 1;
+            }
+            nowSz++;
+            if (nowSz % 8 == 0) {
+                bufferSize++;
+            }
+        }
+        if ((i + 1) % 10000 == 0) {
+            printf("+");
+        }
+    }
+    if (nowSz % 8) {
+        bufferSize++;
+    }
+    printf("+|\n");
+
+    char nameOut[CHARMAX] = "\0";
+    getNewFileName(nameOut, argv[1], "compress");
+    FILE * compressedFile = fopen(nameOut, "wb");
+    fwrite(buffer, 1, bufferSize, compressedFile);
+    fclose(compressedFile);
+
+    free(strFile);
+    free(buffer);
+    free(listData);
+    free(queue);
+
+    printf("Successful compression!\nThe new file is called \"%s\"\n", nameOut);
+    return;
+}
+
+void parse(char command[CHARMAX], int * argc) {
+    for (int i = 0; i < CHARMAX; i++) {
+        argv[i][0] = '\0';
+    }
+    for (int i = 0; command[i]; i++) {
+        if (command[i] == ' ' && (i == 0 || command[i - 1] == ' ')) {
+            continue;
+        }
+        if (command[i] == ' ') {
+            (*argc)++;
+            continue;
+        }
+        strncat(argv[*argc], command + i, 1);
+        if (!command[i + 1]) {
+            (*argc)++;
+        }
+    }
+}
+
+void help() {
+    printf("There are 4 commands now: \"help\", \"compress [path or \\last]\", \"decompress [path or \\last]\", \"exit\"\n");
+}
+
+
+void myExit() {
+    fflush(stdin);
+    exit(0);
+}
+
+char * namesCommands[CHARMAX];
+int cntArgs[CHARMAX], cntCommands;
+void (*functions[])() = {help, compress, decompress, myExit};
+
+void init() {
+    cntCommands = 5;
+
+    namesCommands[0] = "help";
+    namesCommands[1] = "compress";
+    namesCommands[2] = "decompress";
+    namesCommands[3] = "exit";
+
+    cntArgs[0] = 1;
+    cntArgs[1] = 2;
+    cntArgs[2] = 2;
+    cntArgs[3] = 1;
 }
 
 int main() {
-    const char* sourceFilePath = "input.txt";
-    const char* compressedFilePath = "compressed.bin";
-    const char* decompressedFilePath = "decompressed.txt";
-
-    compressFile(sourceFilePath, compressedFilePath);
-    decompressFile(compressedFilePath, decompressedFilePath);
-
-    printf("Compression and decompression are complete.\n");
-
+    init();
+    while (TRUE) {
+        printf("[You:] ");
+        char command[CHARMAX];
+        strset(command, '\0');
+        scanf("%[^\n]", command);
+        int argc = 0;
+        parse(command, &argc);
+        for (int i = 0; i < cntCommands + 1; i++) {
+            if (i == cntCommands) {
+                printf("Incorrect query, please try \"help\"\n");
+                break;
+            }
+            if (argc == cntArgs[i] && !strcmp(argv[0], namesCommands[i])) {
+                functions[i]();
+                break;
+            }
+        }
+        fflush(stdin);
+    }
     return 0;
 }
